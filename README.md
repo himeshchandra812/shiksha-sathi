@@ -1,11 +1,65 @@
-<div align="center">
+# AI-Powered Chat Assistant
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+A high-performance full-stack chat application built with **React**, **Vite**, and **Express**, featuring multi-model fallback support for **Google Gemini** and **Sarvam AI**.
 
-  <h1>Built with AI Studio</h2>
+## 🚀 Features
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+- **Multi-Model Intelligence**: Seamlessly switch between Gemini and Sarvam AI models.
+- **Robust Error Recovery**: Built-in recovery engine that automatically falls back to alternative models if the primary API fails.
+- **Streaming-like Reliability**: Optimized backend logic for stable response generation.
+- **Modern UI**: Polished interface with responsive design.
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+## 🛠️ Tech Stack
 
-</div>
+- **Frontend**: React 18, Vite, Tailwind CSS, Lucide Icons, Framer Motion.
+- **Backend**: Node.js, Express, TypeScript.
+- **AI Integration**: Google Generative AI SDK, Sarvam AI API.
+- **Build System**: esbuild (for server bundling), Vite (for frontend).
+
+## 📋 Prerequisites
+
+- Node.js (v18 or higher)
+- npm or yarn
+- API Keys for Google Gemini and/or Sarvam AI
+
+## ⚙️ Setup Instructions
+
+1. **Clone the repository**:
+   ```bash
+   git clone <your-repository-url>
+   cd <repository-folder>
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Configure Environment Variables**:
+   - Copy `.env.example` to `.env`.
+   - Add your API keys to the `.env` file.
+   ```bash
+   cp .env.example .env
+   ```
+
+4. **Start Development Server**:
+   ```bash
+   npm run dev
+   ```
+
+5. **Build for Production**:
+   ```bash
+   npm run build
+   npm start
+   ```
+
+## 🏗️ Project Structure
+
+- `src/`: React frontend application.
+- `server.ts`: Express server with AI routing logic.
+- `dist/`: Compiled production build (generated).
+- `public/`: Static assets.
+
+## 📄 License
+
+MIT

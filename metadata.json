@@ -1,0 +1,6 @@
+{
+  "name": "Shiksha Sathi",
+  "description": "AI assistant that helps non-technical school teachers deliver coding and robotics lessons.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
