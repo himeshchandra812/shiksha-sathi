@@ -43,6 +43,7 @@ export default function TeacherAISuite({ language, onAskAI, selectedModel = 'sar
   const [activeFeature, setActiveFeature] = useState<'automation' | 'personalized' | 'realtime-sos' | 'improved-assessment'>('automation');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [aiResult, setAiResult] = useState<string>('');
+  const [copied, setCopied] = useState<boolean>(false);
   
   // Local states for translation UI labels (fallback)
   const translations = {
@@ -118,7 +119,7 @@ export default function TeacherAISuite({ language, onAskAI, selectedModel = 'sar
   // Feature 3: Realtime Lesson SOS States
   const [sosTopic, setSosTopic] = useState('Infinite loop crashed standard web editor');
   const [sosStudentState, setSosStudentState] = useState('bored'); // 'bored' | 'stuck-error' | 'finishing-early'
-  const [customSosQuery, setCustomSosQuery] = useState('');;
+  const [customSosQuery, setCustomSosQuery] = useState('');
   // Feature 5: Improved Assessment States
   const [selectedStudentAnalytics, setSelectedStudentAnalytics] = useState<string>('all');
   const [analyticsClassFilter, setAnalyticsClassFilter] = useState('Class 6A');
@@ -236,7 +237,8 @@ Reply in ${language === 'hi' ? 'Hindi' : language === 'te' ? 'Telugu' : 'English
 
   const handleCopyResult = () => {
     navigator.clipboard.writeText(aiResult);
-    alert(t.copySuccess);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const handlePrintResult = () => {
@@ -626,11 +628,15 @@ Reply in ${language === 'hi' ? 'Hindi' : language === 'te' ? 'Telugu' : 'English
             <div className="flex gap-2">
               <button 
                 onClick={handleCopyResult}
-                className="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-white border border-white/20 transition-all text-[10px] font-bold flex items-center gap-1"
+                className={`p-1.5 rounded-lg border transition-all text-[10px] font-bold flex items-center gap-1 ${
+                  copied 
+                    ? 'bg-emerald-600 text-white border-emerald-500' 
+                    : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
+                }`}
                 title={t.copy}
               >
                 <Copy className="w-3 h-3" />
-                Copy
+                {copied ? (language === 'hi' ? 'कॉपी हो गया! ✓' : language === 'te' ? 'కాపీ చేయబడింది! ✓' : 'Copied! ✓') : 'Copy'}
               </button>
               <button 
                 onClick={handlePrintResult}
@@ -638,7 +644,7 @@ Reply in ${language === 'hi' ? 'Hindi' : language === 'te' ? 'Telugu' : 'English
                 title={t.print}
               >
                 <Printer className="w-3 h-3" />
-                Print
+                Word Doc
               </button>
             </div>
           )}
@@ -656,7 +662,7 @@ Reply in ${language === 'hi' ? 'Hindi' : language === 'te' ? 'Telugu' : 'English
               <p className="font-gaegu text-2xl font-bold text-[#1a1a1a] text-center max-w-xs px-4">
                 {t.loading}
               </p>
-              <p className="text-[10px] text-slate-400 font-mono mt-1">Calling Gemini 3.5 Flash Model...</p>
+              <p className="text-[10px] text-slate-400 font-mono mt-1">Generating customized pedagogical content...</p>
             </div>
           ) : null}
 

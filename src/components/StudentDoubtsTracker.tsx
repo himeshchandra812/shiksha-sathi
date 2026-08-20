@@ -20,7 +20,12 @@ import {
   Tag, 
   Send,
   Lightbulb,
-  Share2
+  Share2,
+  ShieldAlert,
+  ShieldCheck,
+  Zap,
+  Flame,
+  AlertTriangle
 } from 'lucide-react';
 
 export interface StudentDoubt {
@@ -30,12 +35,17 @@ export interface StudentDoubt {
   studentGrade: string;
   doubt: string;
   topic?: string;
-  category?: 'coding' | 'hardware' | 'logic' | 'general';
+  category?: 'coding' | 'hardware' | 'logic' | 'general' | 'non_academic';
   timestamp: string;
   createdAt: number;
   aiResponse?: string;
   isResolved: boolean;
   teacherNotes?: string;
+  isFlagged?: boolean;
+  flagType?: 'non_academic' | 'inappropriate' | 'off_topic';
+  flagReason?: string;
+  tokensUsed?: number;
+  tokensSaved?: number;
 }
 
 interface StudentDoubtsTrackerProps {
@@ -54,7 +64,7 @@ export default function StudentDoubtsTracker({
   const [doubts, setDoubts] = useState<StudentDoubt[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'resolved'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'flagged' | 'resolved'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [expandedDoubtId, setExpandedDoubtId] = useState<string | null>(null);
   
@@ -68,118 +78,132 @@ export default function StudentDoubtsTracker({
   const [simName, setSimName] = useState<string>('Aarav Mehta');
   const [simGrade, setSimGrade] = useState<string>('Class 6B');
   const [simDoubt, setSimDoubt] = useState<string>('Why is my servo motor vibrating continuously without moving?');
-  const [simCategory, setSimCategory] = useState<'coding' | 'hardware' | 'logic' | 'general'>('hardware');
+  const [simCategory, setSimCategory] = useState<'coding' | 'hardware' | 'logic' | 'general' | 'non_academic'>('hardware');
+  const [simIsFlagged, setSimIsFlagged] = useState<boolean>(false);
+  const [simFlagReason, setSimFlagReason] = useState<string>('');
 
   const translations = {
     en: {
-      trackerTitle: "Student Doubts Hub",
-      trackerSubtitle: "Real-time log of questions and doubts asked by students across classrooms.",
+      trackerTitle: "Student Doubts & Safety Hub",
+      trackerSubtitle: "Real-time log of questions, academic doubts, and auto-flagged non-educational queries.",
       searchPlaceholder: "Search by student name, topic, or keyword...",
-      filterAll: "All Doubts",
+      filterAll: "All Inquiries",
       filterPending: "Needs Review",
+      filterFlagged: "⚠️ Flagged (Non-Academic)",
       filterResolved: "Resolved",
-      statTotal: "Total Doubts",
+      statTotal: "Total Inquiries",
       statPending: "Action Needed",
+      statFlagged: "Reported Off-Topic",
       statResolved: "Resolved",
-      statStudents: "Active Students",
       resolvedBadge: "Resolved",
       pendingBadge: "Needs Attention",
+      flaggedBadge: "Reported to Teacher",
       askedAt: "Asked",
       studentLabel: "Student",
       gradeLabel: "Grade",
-      aiExplanationLabel: "AI Sathi's Instant Solution",
-      teacherNoteLabel: "Teacher's Classroom Notes & Remarks",
+      aiExplanationLabel: "AI Sathi's Response",
+      teacherNoteLabel: "Teacher's Remarks & Disciplinary Notes",
       addTeacherNote: "Add Teacher Remark / Action",
       saveNote: "Save Remark",
       cancel: "Cancel",
-      markResolved: "Mark as Resolved",
-      markUnresolved: "Reopen Doubt",
+      markResolved: "Mark as Handled",
+      markUnresolved: "Reopen Inquiry",
       remedyBtn: "Generate Class Remedial Plan",
       quizBtn: "Create Quick Quiz for this Doubt",
-      simulateBtn: "+ Simulate Live Student Doubt",
+      simulateBtn: "+ Test Student Doubt / Violation",
       noDoubtsFound: "No doubts found matching your filters.",
-      emptyStateTip: "When students ask questions in the chat or use the Doubt Helper, they will appear here instantly.",
-      deleteConfirm: "Delete doubt record?",
+      emptyStateTip: "When students ask questions in the chat, academic questions and flagged non-educational queries appear here instantly.",
+      deleteConfirm: "Delete this record?",
+      unflagBtn: "Clear Flag",
       categories: {
         all: "All Categories",
         coding: "Coding & Syntax",
         hardware: "Hardware & Wires",
         logic: "Logic & Loops",
-        general: "General Concepts"
+        general: "General Concepts",
+        non_academic: "⚠️ Non-Academic Off-Topic"
       }
     },
     hi: {
-      trackerTitle: "छात्रों के प्रश्न व शंका केंद्र",
-      trackerSubtitle: "छात्रों द्वारा पूछे गए सभी प्रश्नों और शंकाओं का रीयल-टाइम रिकॉर्ड।",
+      trackerTitle: "छात्र प्रश्न व सुरक्षा केंद्र",
+      trackerSubtitle: "छात्रों के प्रश्नों, शैक्षणिक शंकाओं और गैर-शैक्षणिक उल्लंघनों का रीयल-टाइम रिकॉर्ड।",
       searchPlaceholder: "छात्र का नाम, विषय या प्रश्न खोजें...",
       filterAll: "सभी प्रश्न",
       filterPending: "सुलझाना बाकी",
+      filterFlagged: "⚠️ गैर-शैक्षणिक रिपोर्ट",
       filterResolved: "सुलझा लिए गए",
       statTotal: "कुल प्रश्न",
       statPending: "समीक्षा आवश्यक",
+      statFlagged: "शिक्षक को रिपोर्टेड",
       statResolved: "सुलझे हुए",
-      statStudents: "सक्रिय छात्र",
       resolvedBadge: "सुलझ गया",
       pendingBadge: "ध्यान देने योग्य",
+      flaggedBadge: "शिक्षक को रिपोर्टेड",
       askedAt: "पूछा गया",
       studentLabel: "छात्र",
       gradeLabel: "कक्षा",
-      aiExplanationLabel: "एआई साथी का तत्काल उत्तर",
-      teacherNoteLabel: "शिक्षक की कक्षा टिप्पणी (Teacher Notes)",
+      aiExplanationLabel: "एआई साथी का उत्तर",
+      teacherNoteLabel: "शिक्षक की टिप्पणी (Teacher Notes)",
       addTeacherNote: "शिक्षक टिप्पणी जोड़ें",
       saveNote: "टिप्पणी सहेजें",
       cancel: "रद्द करें",
       markResolved: "सुलझा हुआ चिह्नित करें",
       markUnresolved: "पुनः खोलें",
-      remedyBtn: "कक्षा के लिए उपचारात्मक पाठ बनाएं",
-      quizBtn: "इस शंका पर त्वरित क्विज़ बनाएं",
-      simulateBtn: "+ छात्र प्रश्न का परीक्षण करें",
+      remedyBtn: "उपचारात्मक पाठ बनाएं",
+      quizBtn: "त्वरित क्विज़ बनाएं",
+      simulateBtn: "+ छात्र प्रश्न/उल्लंघन टेस्ट करें",
       noDoubtsFound: "कोई प्रश्न नहीं मिला।",
       emptyStateTip: "जब छात्र चैट में प्रश्न पूछेंगे, तो वे तुरंत यहाँ दिखाई देंगे।",
       deleteConfirm: "क्या आप इस प्रश्न को हटाना चाहते हैं?",
+      unflagBtn: "फ्लैग हटाएं",
       categories: {
         all: "सभी श्रेणियां",
         coding: "कोडिंग और सिंटैक्स",
         hardware: "हार्डवेयर और तार",
         logic: "लॉजिक और लूप",
-        general: "सामान्य अवधारणाएं"
+        general: "सामान्य अवधारणाएं",
+        non_academic: "⚠️ गैर-शैक्षणिक प्रश्न"
       }
     },
     te: {
-      trackerTitle: "విద్యార్థుల సందేహాల హబ్",
-      trackerSubtitle: "తరగతి గదుల్లో విద్యార్థులు అడిగిన ప్రశ్నలు మరియు సందేహాల రికార్డు.",
+      trackerTitle: "విద్యార్థుల సందేహాలు & భద్రతా హబ్",
+      trackerSubtitle: "తరగతి గదుల్లో విద్యార్థుల ప్రశ్నలు మరియు అనధికారిక ప్రశ్నల రికార్డు.",
       searchPlaceholder: "విద్యార్థి పేరు లేదా అంశం ద్వారా శోధించండి...",
       filterAll: "అన్ని సందేహాలు",
       filterPending: "పరిశీలన అవసరం",
+      filterFlagged: "⚠️ నివేదించబడిన ప్రశ్నలు",
       filterResolved: "పరిష్కరించబడింది",
       statTotal: "మొత్తం సందేహాలు",
       statPending: "చర్య అవసరం",
+      statFlagged: "నివేదించబడినవి",
       statResolved: "పరిష్కరించబడింది",
-      statStudents: "విద్యార్థులు",
       resolvedBadge: "పరిష్కరించబడింది",
       pendingBadge: "శ్రద్ధ అవసరం",
+      flaggedBadge: "ఉపాధ్యాయునికి నివేదించబడింది",
       askedAt: "సమయం",
       studentLabel: "విద్యార్థి",
       gradeLabel: "తరగతి",
-      aiExplanationLabel: "AI సాథి తక్షణ సమాధానం",
+      aiExplanationLabel: "AI సాథి సమాధానం",
       teacherNoteLabel: "ఉపాధ్యాయుల గమనికలు",
-      addTeacherNote: "ఉపాధ్యాయుని వ్యాఖ్యను జోడించండి",
+      addTeacherNote: "వ్యాఖ్యను జోడించండి",
       saveNote: "సేవ్ చేయండి",
       cancel: "రద్దు చేయి",
       markResolved: "పరిష్కరించినట్లు గుర్తించండి",
       markUnresolved: "తిరిగి తెరవండి",
-      remedyBtn: "తరగతి నివారణ ప్రణాళికను రూపొందించండి",
-      quizBtn: "ఈ సందేహంపై త్వరిత క్విజ్ సృష్టించండి",
-      simulateBtn: "+ విద్యార్థి సందేహాన్ని అనుకరించండి",
+      remedyBtn: "నివారణ ప్రణాళికను రూపొందించండి",
+      quizBtn: "క్విజ్ సృష్టించండి",
+      simulateBtn: "+ విద్యార్థి సందేహాన్ని పరీక్షించండి",
       noDoubtsFound: "సందేహాలు ఏవీ కనుగొనబడలేదు.",
       emptyStateTip: "విద్యార్థులు చాట్‌లో ప్రశ్నలు అడిగినప్పుడు, అవి ఇక్కడ కనిపిస్తాయి.",
       deleteConfirm: "ఈ సందేహాన్ని తొలగించాలా?",
+      unflagBtn: "ఫ్లాగ్ తొలగించు",
       categories: {
         all: "అన్ని వర్గాలు",
         coding: "కోడింగ్ & సింటాక్స్",
         hardware: "హార్డ్‌వేర్ & వైర్లు",
         logic: "లాజిక్ & లూప్‌లు",
-        general: "సాధారణ అంశాలు"
+        general: "సాధారణ అంశాలు",
+        non_academic: "⚠️ విద్యాసంబంధం కానివి"
       }
     }
   };
@@ -196,7 +220,7 @@ export default function StudentDoubtsTracker({
         setDoubts(data.doubts || []);
       }
     } catch (err) {
-      console.error('Failed to fetch doubts:', err);
+      console.warn('[Doubts Tracker] Could not sync doubts from backend:', err);
     } finally {
       setIsLoading(false);
     }
@@ -204,8 +228,7 @@ export default function StudentDoubtsTracker({
 
   useEffect(() => {
     fetchDoubts();
-    // Poll every 10 seconds for real-time updates
-    const interval = setInterval(fetchDoubts, 10000);
+    const interval = setInterval(fetchDoubts, 8000);
     return () => clearInterval(interval);
   }, []);
 
@@ -222,6 +245,22 @@ export default function StudentDoubtsTracker({
       }
     } catch (err) {
       console.error('Failed to toggle status:', err);
+    }
+  };
+
+  // Unflag a reported inquiry
+  const handleToggleFlag = async (doubtId: string, currentFlag: boolean) => {
+    try {
+      const res = await fetch(`/api/doubts/${doubtId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isFlagged: !currentFlag })
+      });
+      if (res.ok) {
+        setDoubts(prev => prev.map(d => d.id === doubtId ? { ...d, isFlagged: !currentFlag } : d));
+      }
+    } catch (err) {
+      console.error('Failed to toggle flag:', err);
     }
   };
 
@@ -260,7 +299,7 @@ export default function StudentDoubtsTracker({
     }
   };
 
-  // Simulate new student doubt
+  // Simulate new student doubt or non-academic violation
   const handleSimulateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!simDoubt.trim()) return;
@@ -274,8 +313,12 @@ export default function StudentDoubtsTracker({
           studentGrade: simGrade.trim() || 'Class 6',
           doubt: simDoubt.trim(),
           category: simCategory,
-          topic: simCategory === 'hardware' ? 'Hardware & Sensors' : simCategory === 'coding' ? 'Programming Syntax' : 'Problem Solving',
-          aiResponse: `Shiksha Sathi analyzed this issue: For ${simDoubt.slice(0, 40)}..., ensure common wiring connections and supply voltage are verified.`
+          isFlagged: simIsFlagged,
+          flagReason: simFlagReason || (simIsFlagged ? 'Non-Educational Topic Inquiry' : undefined),
+          topic: simIsFlagged ? `Flagged: ${simFlagReason || 'Off-Topic Activity'}` : (simCategory === 'hardware' ? 'Hardware & Sensors' : simCategory === 'coding' ? 'Programming Syntax' : 'Problem Solving'),
+          aiResponse: simIsFlagged 
+            ? '⚠️ Non-Academic Query Notice: Shiksha Sathi is an educational copilot. This non-academic inquiry was refused and reported to the teacher.'
+            : `Shiksha Sathi analyzed this issue: For ${simDoubt.slice(0, 40)}..., ensure common wiring connections and supply voltage are verified.`
         })
       });
 
@@ -284,6 +327,8 @@ export default function StudentDoubtsTracker({
         setDoubts(prev => [data.doubt, ...prev]);
         setShowSimulateModal(false);
         setSimDoubt('');
+        setSimIsFlagged(false);
+        setSimFlagReason('');
       }
     } catch (err) {
       console.error('Failed to simulate doubt:', err);
@@ -317,6 +362,7 @@ export default function StudentDoubtsTracker({
     // Status filter
     if (statusFilter === 'pending' && item.isResolved) return false;
     if (statusFilter === 'resolved' && !item.isResolved) return false;
+    if (statusFilter === 'flagged' && !item.isFlagged) return false;
 
     // Category filter
     if (categoryFilter !== 'all' && item.category !== categoryFilter) return false;
@@ -328,7 +374,8 @@ export default function StudentDoubtsTracker({
       const matchDoubt = item.doubt.toLowerCase().includes(q);
       const matchTopic = item.topic?.toLowerCase().includes(q) || false;
       const matchGrade = item.studentGrade.toLowerCase().includes(q);
-      if (!matchName && !matchDoubt && !matchTopic && !matchGrade) return false;
+      const matchReason = item.flagReason?.toLowerCase().includes(q) || false;
+      if (!matchName && !matchDoubt && !matchTopic && !matchGrade && !matchReason) return false;
     }
 
     return true;
@@ -336,9 +383,10 @@ export default function StudentDoubtsTracker({
 
   // Calculate statistics
   const totalCount = doubts.length;
-  const pendingCount = doubts.filter(d => !d.isResolved).length;
+  const pendingCount = doubts.filter(d => !d.isResolved && !d.isFlagged).length;
+  const flaggedCount = doubts.filter(d => d.isFlagged && !d.isResolved).length;
   const resolvedCount = doubts.filter(d => d.isResolved).length;
-  const uniqueStudents = new Set(doubts.map(d => d.studentName.trim().toLowerCase())).size;
+  const totalTokensSaved = doubts.reduce((acc, d) => acc + (d.tokensSaved || 350), 0);
 
   return (
     <div id="student-doubts-hub" className="flex-1 overflow-y-auto p-4 md:p-8 bg-[#FDFBF7] space-y-6">
@@ -346,9 +394,17 @@ export default function StudentDoubtsTracker({
       {/* Header Banner */}
       <div className="bg-white border-3 border-[#1a1a1a] rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-[6px_6px_0px_#1a1a1a] flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
         <div className="space-y-2 z-10 max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#e8e5ff] border-2 border-[#1a1a1a] rounded-full text-xs font-mono font-bold text-[#5e43ff] shadow-[2px_2px_0px_#1a1a1a]">
-            <HelpCircle className="w-3.5 h-3.5 text-[#5e43ff]" />
-            <span>LIVE CLASSROOM INTAKE</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#e8e5ff] border-2 border-[#1a1a1a] rounded-full text-xs font-mono font-bold text-[#5e43ff] shadow-[2px_2px_0px_#1a1a1a]">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#5e43ff]" />
+              <span>ACADEMIC GUARDRAIL ACTIVE</span>
+            </div>
+            {flaggedCount > 0 && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-100 border-2 border-[#1a1a1a] rounded-full text-xs font-mono font-bold text-rose-700 animate-pulse shadow-[2px_2px_0px_#1a1a1a]">
+                <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
+                <span>{flaggedCount} Flagged Off-Topic Inquiries</span>
+              </span>
+            )}
           </div>
           <h2 className="font-gaegu text-3xl md:text-4xl font-extrabold text-[#1a1a1a] tracking-tight">
             {t.trackerTitle}
@@ -362,7 +418,7 @@ export default function StudentDoubtsTracker({
           <button
             onClick={() => setShowSimulateModal(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-[#5e43ff] text-white font-mono text-xs md:text-sm font-bold rounded-xl border-2 border-[#1a1a1a] shadow-[3px_3px_0px_#1a1a1a] hover:-translate-y-0.5 hover:bg-[#4d32f0] transition-all cursor-pointer"
-            title="Add a simulated student doubt for testing"
+            title="Add a test student doubt or violation"
           >
             <PlusCircle className="w-4 h-4" />
             <span>{t.simulateBtn}</span>
@@ -379,7 +435,7 @@ export default function StudentDoubtsTracker({
 
         {/* Subtle decorative background watermark */}
         <div className="absolute right-4 bottom-2 text-slate-100 select-none pointer-events-none -rotate-12 hidden lg:block">
-          <HelpCircle className="w-48 h-48 opacity-25" />
+          <ShieldAlert className="w-48 h-48 opacity-20" />
         </div>
       </div>
 
@@ -391,7 +447,7 @@ export default function StudentDoubtsTracker({
           </span>
           <div className="flex items-baseline gap-2">
             <span className="font-gaegu text-4xl font-extrabold text-[#1a1a1a]">{totalCount}</span>
-            <span className="text-xs text-slate-500 font-semibold font-mono">questions</span>
+            <span className="text-xs text-slate-500 font-semibold font-mono">logged</span>
           </div>
         </div>
 
@@ -401,7 +457,20 @@ export default function StudentDoubtsTracker({
           </span>
           <div className="flex items-baseline gap-2">
             <span className="font-gaegu text-4xl font-extrabold text-[#E65100]">{pendingCount}</span>
-            <span className="text-xs text-amber-800 font-semibold font-mono">unresolved</span>
+            <span className="text-xs text-amber-800 font-semibold font-mono">academic</span>
+          </div>
+        </div>
+
+        <div className={`border-2 border-[#1a1a1a] rounded-2xl p-4 md:p-5 shadow-[4px_4px_0px_#1a1a1a] ${
+          flaggedCount > 0 ? 'bg-rose-100 ring-2 ring-rose-400' : 'bg-rose-50'
+        }`}>
+          <span className="font-mono text-xs text-rose-900 font-bold uppercase tracking-wider block mb-1 flex items-center gap-1">
+            <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
+            {t.statFlagged}
+          </span>
+          <div className="flex items-baseline gap-2">
+            <span className="font-gaegu text-4xl font-extrabold text-rose-700">{flaggedCount}</span>
+            <span className="text-xs text-rose-800 font-semibold font-mono">violations</span>
           </div>
         </div>
 
@@ -411,18 +480,32 @@ export default function StudentDoubtsTracker({
           </span>
           <div className="flex items-baseline gap-2">
             <span className="font-gaegu text-4xl font-extrabold text-[#2E7D32]">{resolvedCount}</span>
-            <span className="text-xs text-emerald-800 font-semibold font-mono">addressed</span>
+            <span className="text-xs text-emerald-800 font-semibold font-mono">reviewed</span>
           </div>
         </div>
+      </div>
 
-        <div className="bg-[#E1F5FE] border-2 border-[#1a1a1a] rounded-2xl p-4 md:p-5 shadow-[4px_4px_0px_#1a1a1a]">
-          <span className="font-mono text-xs text-sky-900 font-bold uppercase tracking-wider block mb-1">
-            {t.statStudents}
-          </span>
-          <div className="flex items-baseline gap-2">
-            <span className="font-gaegu text-4xl font-extrabold text-[#01579B]">{uniqueStudents}</span>
-            <span className="text-xs text-sky-800 font-semibold font-mono">inquiring</span>
+      {/* Safety Guardrail Feature Card */}
+      <div className="bg-gradient-to-r from-amber-50 to-indigo-50 border-2 border-[#1a1a1a] rounded-2xl p-4 shadow-[4px_4px_0px_#1a1a1a] flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-400 border-2 border-[#1a1a1a] flex items-center justify-center shadow-[2px_2px_0px_#1a1a1a] shrink-0">
+            <ShieldCheck className="w-5 h-5 text-[#1a1a1a]" />
           </div>
+          <div>
+            <div className="font-bold text-xs md:text-sm text-[#1a1a1a] flex items-center gap-2">
+              <span>Classroom Safety & Academic Guardrail Active</span>
+              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-mono font-bold rounded-md border border-emerald-300">
+                100% Guarded
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 font-medium">
+              Only academic STEM doubts are answered. All off-topic inquiries (gaming, entertainment, gossip) are blocked and automatically reported to this teacher hub.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0 font-mono text-xs font-bold text-slate-700 bg-white px-3 py-1.5 rounded-xl border border-[#1a1a1a]">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Academic Safety Filter</span>
         </div>
       </div>
 
@@ -452,17 +535,19 @@ export default function StudentDoubtsTracker({
         <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
           {/* Status Buttons */}
           <div className="flex bg-slate-100 p-1 rounded-xl border-2 border-[#1a1a1a]">
-            {(['all', 'pending', 'resolved'] as const).map((status) => (
+            {(['all', 'pending', 'flagged', 'resolved'] as const).map((status) => (
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
                 className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
                   statusFilter === status
-                    ? 'bg-[#1a1a1a] text-white shadow-xs'
+                    ? (status === 'flagged' ? 'bg-rose-600 text-white shadow-xs' : 'bg-[#1a1a1a] text-white shadow-xs')
                     : 'text-[#1a1a1a] hover:bg-slate-200'
                 }`}
               >
-                {status === 'all' ? t.filterAll : status === 'pending' ? t.filterPending : t.filterResolved}
+                {status === 'all' ? t.filterAll : 
+                 status === 'pending' ? t.filterPending : 
+                 status === 'flagged' ? t.filterFlagged : t.filterResolved}
               </button>
             ))}
           </div>
@@ -478,6 +563,7 @@ export default function StudentDoubtsTracker({
             <option value="hardware">{t.categories.hardware}</option>
             <option value="logic">{t.categories.logic}</option>
             <option value="general">{t.categories.general}</option>
+            <option value="non_academic">{t.categories.non_academic}</option>
           </select>
         </div>
       </div>
@@ -508,7 +594,10 @@ export default function StudentDoubtsTracker({
         ) : (
           filteredDoubts.map((item) => {
             const isExpanded = expandedDoubtId === item.id;
+            const isFlagged = item.isFlagged || item.category === 'non_academic';
+
             const categoryColor = 
+              isFlagged ? 'bg-rose-100 text-rose-800 border-rose-300' :
               item.category === 'hardware' ? 'bg-[#DCEDC8] text-[#33691E]' :
               item.category === 'coding' ? 'bg-[#B3E5FC] text-[#01579B]' :
               item.category === 'logic' ? 'bg-[#FFE0B2] text-[#E65100]' :
@@ -517,8 +606,10 @@ export default function StudentDoubtsTracker({
             return (
               <div 
                 key={item.id}
-                className={`bg-white border-2 border-[#1a1a1a] rounded-2xl transition-all shadow-[4px_4px_0px_#1a1a1a] overflow-hidden ${
-                  !item.isResolved ? 'hover:border-[#5e43ff]' : 'opacity-90'
+                className={`bg-white border-2 rounded-2xl transition-all shadow-[4px_4px_0px_#1a1a1a] overflow-hidden ${
+                  isFlagged 
+                    ? 'border-rose-500 ring-2 ring-rose-300/60 bg-rose-50/20' 
+                    : !item.isResolved ? 'border-[#1a1a1a] hover:border-[#5e43ff]' : 'border-[#1a1a1a] opacity-90'
                 }`}
               >
                 {/* Doubt Card Header */}
@@ -526,8 +617,10 @@ export default function StudentDoubtsTracker({
                   
                   {/* Left Side: Student avatar & question */}
                   <div className="flex items-start gap-3.5 flex-1">
-                    <div className="w-10 h-10 rounded-xl bg-amber-100 border-2 border-[#1a1a1a] flex items-center justify-center font-bold font-mono text-sm text-amber-900 shadow-[2px_2px_0px_#1a1a1a] shrink-0 mt-0.5">
-                      {item.studentName ? item.studentName.charAt(0).toUpperCase() : 'S'}
+                    <div className={`w-10 h-10 rounded-xl border-2 border-[#1a1a1a] flex items-center justify-center font-bold font-mono text-sm shadow-[2px_2px_0px_#1a1a1a] shrink-0 mt-0.5 ${
+                      isFlagged ? 'bg-rose-200 text-rose-900' : 'bg-amber-100 text-amber-900'
+                    }`}>
+                      {isFlagged ? <ShieldAlert className="w-5 h-5 text-rose-700" /> : (item.studentName ? item.studentName.charAt(0).toUpperCase() : 'S')}
                     </div>
 
                     <div className="space-y-1.5 flex-1">
@@ -541,36 +634,55 @@ export default function StudentDoubtsTracker({
                         </span>
                         
                         {/* Category Badge */}
-                        <span className={`text-[10px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-md border border-[#1a1a1a]/30 ${categoryColor}`}>
-                          {item.category || 'General'}
+                        <span className={`text-[10px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-md border ${categoryColor}`}>
+                          {isFlagged ? '⚠️ Non-Academic' : (item.category || 'General')}
                         </span>
 
                         {/* Status Badge */}
-                        <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border border-[#1a1a1a] flex items-center gap-1 ${
-                          item.isResolved 
-                            ? 'bg-[#E8F5E9] text-[#2E7D32]' 
-                            : 'bg-[#FFF3E0] text-[#E65100]'
-                        }`}>
-                          {item.isResolved ? (
-                            <>
-                              <CheckCircle2 className="w-3 h-3 text-[#2E7D32]" />
-                              <span>{t.resolvedBadge}</span>
-                            </>
-                          ) : (
-                            <>
-                              <Clock className="w-3 h-3 text-[#E65100]" />
-                              <span>{t.pendingBadge}</span>
-                            </>
-                          )}
-                        </span>
+                        {isFlagged ? (
+                          <span className="text-[10px] font-mono font-extrabold px-2 py-0.5 rounded-full border border-rose-600 bg-rose-100 text-rose-800 flex items-center gap-1 animate-pulse">
+                            <ShieldAlert className="w-3 h-3 text-rose-600" />
+                            <span>{t.flaggedBadge}</span>
+                          </span>
+                        ) : (
+                          <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border border-[#1a1a1a] flex items-center gap-1 ${
+                            item.isResolved 
+                              ? 'bg-[#E8F5E9] text-[#2E7D32]' 
+                              : 'bg-[#FFF3E0] text-[#E65100]'
+                          }`}>
+                            {item.isResolved ? (
+                              <>
+                                <CheckCircle2 className="w-3 h-3 text-[#2E7D32]" />
+                                <span>{t.resolvedBadge}</span>
+                              </>
+                            ) : (
+                              <>
+                                <Clock className="w-3 h-3 text-[#E65100]" />
+                                <span>{t.pendingBadge}</span>
+                              </>
+                            )}
+                          </span>
+                        )}
 
                         <span className="text-[11px] font-mono text-slate-400 ml-auto hidden sm:inline">
                           {item.timestamp}
                         </span>
                       </div>
 
+                      {/* Flag Alert Warning if Non-Academic */}
+                      {isFlagged && item.flagReason && (
+                        <div className="bg-rose-100 border border-rose-300 p-2.5 rounded-xl flex items-center gap-2 text-xs font-bold text-rose-800 font-mono">
+                          <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                          <span>Violation: {item.flagReason}</span>
+                        </div>
+                      )}
+
                       {/* The Doubt Text */}
-                      <div className="bg-amber-50/70 border border-amber-200/80 p-3 rounded-xl">
+                      <div className={`p-3 rounded-xl border ${
+                        isFlagged 
+                          ? 'bg-rose-50/80 border-rose-200' 
+                          : 'bg-amber-50/70 border-amber-200/80'
+                      }`}>
                         <p className="text-sm font-semibold text-[#1a1a1a] leading-relaxed">
                           "{item.doubt}"
                         </p>
@@ -604,7 +716,7 @@ export default function StudentDoubtsTracker({
                     {/* Expand/Collapse Details */}
                     <button
                       onClick={() => setExpandedDoubtId(isExpanded ? null : item.id)}
-                      className="p-1.5 rounded-xl border-2 border-[#1a1a1a] bg-slate-50 hover:bg-slate-100 transition-all"
+                      className="p-1.5 rounded-xl border-2 border-[#1a1a1a] bg-slate-50 hover:bg-slate-100 transition-all cursor-pointer"
                       title="View AI answer & teacher actions"
                     >
                       <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
@@ -617,7 +729,7 @@ export default function StudentDoubtsTracker({
                           handleDeleteDoubt(item.id);
                         }
                       }}
-                      className="p-1.5 rounded-xl border-2 border-transparent hover:border-[#1a1a1a] text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all"
+                      className="p-1.5 rounded-xl border-2 border-transparent hover:border-[#1a1a1a] text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all cursor-pointer"
                       title="Delete record"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -631,12 +743,22 @@ export default function StudentDoubtsTracker({
                     
                     {/* AI's Instant Explanation Provided to Student */}
                     {item.aiResponse && (
-                      <div className="bg-white border-2 border-[#1a1a1a] rounded-xl p-4 space-y-2 shadow-xs">
-                        <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#5e43ff]">
-                          <Sparkles className="w-3.5 h-3.5" />
-                          <span>{t.aiExplanationLabel}</span>
+                      <div className={`border-2 border-[#1a1a1a] rounded-xl p-4 space-y-2 shadow-xs ${
+                        isFlagged ? 'bg-rose-50/60' : 'bg-white'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <div className={`flex items-center gap-2 text-xs font-mono font-bold ${
+                            isFlagged ? 'text-rose-700' : 'text-[#5e43ff]'
+                          }`}>
+                            {isFlagged ? <ShieldAlert className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
+                            <span>{isFlagged ? 'AI Guardrail Refusal & Reporting Notice' : t.aiExplanationLabel}</span>
+                          </div>
                         </div>
-                        <p className="text-xs md:text-sm text-slate-700 font-medium leading-relaxed bg-[#f6f5ff] p-3 rounded-lg border border-[#5e43ff]/20">
+                        <p className={`text-xs md:text-sm font-medium leading-relaxed p-3 rounded-lg border ${
+                          isFlagged 
+                            ? 'text-rose-900 bg-rose-100/70 border-rose-200' 
+                            : 'text-slate-700 bg-[#f6f5ff] border-[#5e43ff]/20'
+                        }`}>
                           {item.aiResponse}
                         </p>
                       </div>
@@ -656,7 +778,7 @@ export default function StudentDoubtsTracker({
                               setEditingNoteId(item.id);
                               setNoteText(item.teacherNotes || '');
                             }}
-                            className="text-[11px] font-mono font-bold text-[#5e43ff] hover:underline"
+                            className="text-[11px] font-mono font-bold text-[#5e43ff] hover:underline cursor-pointer"
                           >
                             {item.teacherNotes ? 'Edit Remark' : '+ Add Remark'}
                           </button>
@@ -668,7 +790,7 @@ export default function StudentDoubtsTracker({
                           <textarea
                             value={noteText}
                             onChange={(e) => setNoteText(e.target.value)}
-                            placeholder="Add classroom follow-up note, e.g., 'Demonstrated polar capacitor in lab period 3'"
+                            placeholder="Add classroom counseling / disciplinary remark, e.g., 'Discussed with student to keep queries focused on robotics.'"
                             className="w-full p-2.5 text-xs font-medium border-2 border-[#1a1a1a] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5e43ff]/30 bg-amber-50/40"
                             rows={2}
                           />
@@ -678,14 +800,14 @@ export default function StudentDoubtsTracker({
                                 setEditingNoteId(null);
                                 setNoteText('');
                               }}
-                              className="px-3 py-1 text-xs font-mono font-bold text-slate-600 hover:bg-slate-100 rounded-lg"
+                              className="px-3 py-1 text-xs font-mono font-bold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
                             >
                               {t.cancel}
                             </button>
                             <button
                               onClick={() => handleSaveNote(item.id)}
                               disabled={savingNote}
-                              className="px-3.5 py-1 bg-[#1a1a1a] text-white text-xs font-mono font-bold rounded-lg hover:bg-black transition-all"
+                              className="px-3.5 py-1 bg-[#1a1a1a] text-white text-xs font-mono font-bold rounded-lg hover:bg-black transition-all cursor-pointer"
                             >
                               {savingNote ? 'Saving...' : t.saveNote}
                             </button>
@@ -698,24 +820,41 @@ export default function StudentDoubtsTracker({
                       )}
                     </div>
 
-                    {/* Teacher Action Triggers */}
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      <button
-                        onClick={() => handleGenerateRemedialPlan(item)}
-                        className="flex items-center gap-2 px-3.5 py-2 bg-[#FFE0B2] text-[#E65100] text-xs font-mono font-bold rounded-xl border-2 border-[#1a1a1a] shadow-[2px_2px_0px_#1a1a1a] hover:-translate-y-0.5 transition-all"
-                      >
-                        <Lightbulb className="w-3.5 h-3.5" />
-                        <span>{t.remedyBtn}</span>
-                      </button>
+                    {/* Teacher Action Triggers for Academic Doubts */}
+                    {!isFlagged && (
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <button
+                          onClick={() => handleGenerateRemedialPlan(item)}
+                          className="flex items-center gap-2 px-3.5 py-2 bg-[#FFE0B2] text-[#E65100] text-xs font-mono font-bold rounded-xl border-2 border-[#1a1a1a] shadow-[2px_2px_0px_#1a1a1a] hover:-translate-y-0.5 transition-all cursor-pointer"
+                        >
+                          <Lightbulb className="w-3.5 h-3.5" />
+                          <span>{t.remedyBtn}</span>
+                        </button>
 
-                      <button
-                        onClick={() => handleGenerateQuiz(item)}
-                        className="flex items-center gap-2 px-3.5 py-2 bg-[#B3E5FC] text-[#01579B] text-xs font-mono font-bold rounded-xl border-2 border-[#1a1a1a] shadow-[2px_2px_0px_#1a1a1a] hover:-translate-y-0.5 transition-all"
-                      >
-                        <GraduationCap className="w-3.5 h-3.5" />
-                        <span>{t.quizBtn}</span>
-                      </button>
-                    </div>
+                        <button
+                          onClick={() => handleGenerateQuiz(item)}
+                          className="flex items-center gap-2 px-3.5 py-2 bg-[#B3E5FC] text-[#01579B] text-xs font-mono font-bold rounded-xl border-2 border-[#1a1a1a] shadow-[2px_2px_0px_#1a1a1a] hover:-translate-y-0.5 transition-all cursor-pointer"
+                        >
+                          <GraduationCap className="w-3.5 h-3.5" />
+                          <span>{t.quizBtn}</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Quick Unflag / Dismiss Flag button for teachers */}
+                    {isFlagged && (
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-xs font-mono text-slate-500 font-semibold">
+                          Recorded as classroom policy violation
+                        </span>
+                        <button
+                          onClick={() => handleToggleFlag(item.id, true)}
+                          className="px-3 py-1.5 bg-white border-2 border-[#1a1a1a] text-slate-700 text-xs font-mono font-bold rounded-xl shadow-[2px_2px_0px_#1a1a1a] hover:bg-slate-100 cursor-pointer"
+                        >
+                          {t.unflagBtn}
+                        </button>
+                      </div>
+                    )}
 
                   </div>
                 )}
@@ -725,7 +864,7 @@ export default function StudentDoubtsTracker({
         )}
       </div>
 
-      {/* Modal: Simulate Live Student Doubt */}
+      {/* Modal: Simulate Live Student Doubt & Non-Educational Violation */}
       {showSimulateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
           <div className="bg-white border-3 border-[#1a1a1a] rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-[8px_8px_0px_#1a1a1a] space-y-5 animate-scale-up">
@@ -735,15 +874,63 @@ export default function StudentDoubtsTracker({
                   <HelpCircle className="w-5 h-5 text-[#5e43ff]" />
                 </div>
                 <h3 className="font-gaegu text-2xl font-bold text-[#1a1a1a]">
-                  Simulate Student Doubt
+                  Test Student Intake & Guardrails
                 </h3>
               </div>
               <button 
                 onClick={() => setShowSimulateModal(false)}
-                className="p-1 rounded-lg border-2 border-[#1a1a1a] text-slate-500 hover:bg-slate-100"
+                className="p-1 rounded-lg border-2 border-[#1a1a1a] text-slate-500 hover:bg-slate-100 cursor-pointer"
               >
                 ✕
               </button>
+            </div>
+
+            {/* Quick Test Presets */}
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-mono font-bold text-slate-500 uppercase">Quick Presets:</span>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSimName('Rohan Sharma');
+                    setSimGrade('Class 6A');
+                    setSimDoubt('Why is my LED on pin 13 not blinking?');
+                    setSimCategory('hardware');
+                    setSimIsFlagged(false);
+                  }}
+                  className="px-2.5 py-1 bg-emerald-50 text-emerald-800 text-xs font-mono font-bold rounded-lg border border-emerald-300 hover:bg-emerald-100 cursor-pointer"
+                >
+                  ✓ Academic (Arduino LED)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSimName('Vikram Singh');
+                    setSimGrade('Class 6B');
+                    setSimDoubt('Give me Free Fire diamond hacks and cheat codes');
+                    setSimCategory('non_academic');
+                    setSimIsFlagged(true);
+                    setSimFlagReason('Gaming & Non-Curriculum Video Games');
+                  }}
+                  className="px-2.5 py-1 bg-rose-50 text-rose-800 text-xs font-mono font-bold rounded-lg border border-rose-300 hover:bg-rose-100 cursor-pointer"
+                >
+                  ⚠️ Non-Academic (Gaming Hack)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSimName('Ananya Rao');
+                    setSimGrade('Class 6A');
+                    setSimDoubt('Who is the best Bollywood movie actor?');
+                    setSimCategory('non_academic');
+                    setSimIsFlagged(true);
+                    setSimFlagReason('Entertainment & Celebrity Gossip');
+                  }}
+                  className="px-2.5 py-1 bg-rose-50 text-rose-800 text-xs font-mono font-bold rounded-lg border border-rose-300 hover:bg-rose-100 cursor-pointer"
+                >
+                  ⚠️ Non-Academic (Movie Gossip)
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handleSimulateSubmit} className="space-y-4">
@@ -783,19 +970,26 @@ export default function StudentDoubtsTracker({
                 </label>
                 <select
                   value={simCategory}
-                  onChange={(e) => setSimCategory(e.target.value as any)}
-                  className="w-full px-3 py-2 text-xs border-2 border-[#1a1a1a] rounded-xl focus:outline-none font-bold bg-slate-50"
+                  onChange={(e) => {
+                    const val = e.target.value as any;
+                    setSimCategory(val);
+                    if (val === 'non_academic') {
+                      setSimIsFlagged(true);
+                    }
+                  }}
+                  className="w-full px-3 py-2 text-xs border-2 border-[#1a1a1a] rounded-xl focus:outline-none font-bold bg-slate-50 cursor-pointer"
                 >
                   <option value="hardware">Hardware & Wires (Arduino, Servo, LED)</option>
                   <option value="coding">Coding & Syntax (Scratch, C++, Python)</option>
                   <option value="logic">Logic & Loops (If/Else, Repeat, Variables)</option>
-                  <option value="general">General Concept</option>
+                  <option value="general">General Academic Concept</option>
+                  <option value="non_academic">⚠️ Non-Academic Violation (Gaming, Movies, Gossip)</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs font-mono font-bold text-slate-700 mb-1">
-                  Doubt / Question
+                  Doubt / Question Asked
                 </label>
                 <textarea
                   required
@@ -811,15 +1005,15 @@ export default function StudentDoubtsTracker({
                 <button
                   type="button"
                   onClick={() => setShowSimulateModal(false)}
-                  className="px-4 py-2 text-xs font-mono font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+                  className="px-4 py-2 text-xs font-mono font-bold text-slate-600 hover:bg-slate-100 rounded-xl cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-[#5e43ff] text-white text-xs font-mono font-bold rounded-xl border-2 border-[#1a1a1a] shadow-[3px_3px_0px_#1a1a1a] hover:-translate-y-0.5 hover:bg-[#4d32f0] transition-all"
+                  className="px-5 py-2 bg-[#5e43ff] text-white text-xs font-mono font-bold rounded-xl border-2 border-[#1a1a1a] shadow-[3px_3px_0px_#1a1a1a] hover:-translate-y-0.5 hover:bg-[#4d32f0] transition-all cursor-pointer"
                 >
-                  Post Student Doubt
+                  Submit Inquiry
                 </button>
               </div>
             </form>
