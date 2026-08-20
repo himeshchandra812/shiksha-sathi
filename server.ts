@@ -1,9 +1,7 @@
 import express from 'express';
-import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
 
 
@@ -1525,6 +1523,7 @@ PEDAGOGICAL RULES FOR TEACHER CHAT:
   const isProd = process.env.NODE_ENV === 'production';
   if (!isProd) {
     console.log('Running in DEVELOPMENT mode. Starting Vite dev middleware...');
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
@@ -1532,9 +1531,10 @@ PEDAGOGICAL RULES FOR TEACHER CHAT:
     app.use(vite.middlewares);
   } else {
     console.log('Running in PRODUCTION mode. Serving static files from dist/');
-    app.use(express.static(path.join(process.cwd(), 'dist')));
+    const distPath = path.join(process.cwd(), 'dist');
+    app.use(express.static(distPath));
     app.get('*', (req, res) => {
-      res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
+      res.sendFile(path.join(distPath, 'index.html'));
     });
   }
 
