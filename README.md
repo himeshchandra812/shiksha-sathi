@@ -144,7 +144,7 @@ Suggestions, bug reports, and improvements are welcome. Open an issue to discuss
 
 ## 📄 License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file if present in the repository.
+A license file is not currently present in the repository. Add a `LICENSE` file before describing the project as open source under specific terms.
 
 ---
 
