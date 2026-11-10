@@ -1,65 +1,151 @@
-# AI-Powered Chat Assistant
+# Shiksha Sathi 🎓
 
-A high-performance full-stack chat application built with **React**, **Vite**, and **Express**, featuring multi-model fallback support for **Google Gemini** and **Sarvam AI**.
+**An AI-powered teaching and learning co-pilot for coding and robotics education.**
 
-## 🚀 Features
+Shiksha Sathi is a full-stack educational application designed to support teachers and students in STEM classrooms. It brings AI-assisted teaching workflows, student doubt support, interactive hardware simulations, quizzes, and learning progress tools into one multilingual interface.
 
-- **Multi-Model Intelligence**: Seamlessly switch between Gemini and Sarvam AI models.
-- **Robust Error Recovery**: Built-in recovery engine that automatically falls back to alternative models if the primary API fails.
-- **Streaming-like Reliability**: Optimized backend logic for stable response generation.
-- **Modern UI**: Polished interface with responsive design.
+> **Project focus:** Make coding and robotics education more approachable for students while helping teachers prepare learning activities and respond to classroom needs.
 
-## 🛠️ Tech Stack
+## ✨ What it can do
 
-- **Frontend**: React 18, Vite, Tailwind CSS, Lucide Icons, Framer Motion.
-- **Backend**: Node.js, Express, TypeScript.
-- **AI Integration**: Google Generative AI SDK, Sarvam AI API.
-- **Build System**: esbuild (for server bundling), Vite (for frontend).
+### 👩‍🏫 Teacher tools
+- **AI teaching assistant:** Ask for help with lesson planning, classroom explanations, coding concepts, and hardware troubleshooting.
+- **Teacher AI Suite:** Access task automation, personalized learning-path support, live lesson SOS, and smart-assessment workflows.
+- **Learning activity support:** Generate worksheet and coding-challenge content with AI assistance.
+- **Student doubt management:** Review student questions, search and filter inquiries, add teacher notes, mark doubts as resolved, and review flagged off-topic queries.
 
-## 📋 Prerequisites
+### 🧑‍🎓 Student learning tools
+- **AI doubt support:** Ask questions about coding, logic, and electronics and receive guided explanations.
+- **Quiz Arena:** Join a teacher-hosted quiz using a room PIN, or practise with quiz activities. Quizzes include timed questions, scoring, and explanations.
+- **Progress and motivation:** View leaderboard rankings, points, quiz activity, and achievement indicators.
 
-- Node.js (v18 or higher)
-- npm or yarn
-- API Keys for Google Gemini and/or Sarvam AI
+### 🔌 Interactive hardware learning
+Explore a virtual hardware visualizer with interactive scenarios for:
+- LED blinking and common wiring faults
+- Ultrasonic distance measurement
+- Servo motor control
 
-## ⚙️ Setup Instructions
+Learners can change circuit settings, simulate common mistakes, inspect diagnostic feedback, and view related Arduino C++ / block-style logic.
 
-1. **Clone the repository**:
-   ```bash
-   git clone <your-repository-url>
-   cd <repository-folder>
-   ```
+### 🌐 Multilingual interface
+The interface includes **English, Hindi, and Telugu** language options to make STEM learning more accessible.
 
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+## 🧰 Tech stack
 
-3. **Configure Environment Variables**:
-   - Copy `.env.example` to `.env`.
-   - Add your API keys to the `.env` file.
-   ```bash
-   cp .env.example .env
-   ```
+| Area | Technologies |
+|---|---|
+| Frontend | React 19, Vite, TypeScript |
+| Styling and UI | Tailwind CSS, Lucide React, Motion |
+| Backend | Node.js, Express, TypeScript |
+| AI services | Google Gemini API, Sarvam AI API |
+| Build tools | Vite, esbuild |
 
-4. **Start Development Server**:
-   ```bash
-   npm run dev
-   ```
+## 🧠 AI integration and reliability
 
-5. **Build for Production**:
-   ```bash
-   npm run build
-   npm start
-   ```
+The backend supports Google Gemini and Sarvam AI integrations. Gemini requests include retry handling for transient service errors and fallback across configured model choices. Sarvam requests use a candidate-model fallback flow.
 
-## 🏗️ Project Structure
+AI provider access is handled by the Express backend. **Keep API keys on the server and never expose them in frontend code or commit a real `.env` file.**
 
-- `src/`: React frontend application.
-- `server.ts`: Express server with AI routing logic.
-- `dist/`: Compiled production build (generated).
-- `public/`: Static assets.
+## 🏗️ Project structure
+
+```text
+.
+├── src/
+│   ├── components/
+│   │   ├── HardwareVisualizer.tsx
+│   │   ├── LeaderboardTracker.tsx
+│   │   ├── LoginPortal.tsx
+│   │   ├── StudentDoubtsTracker.tsx
+│   │   ├── StudentQuizHub.tsx
+│   │   └── TeacherAISuite.tsx
+│   ├── App.tsx
+│   └── index.css
+├── server.ts
+├── .env.example
+├── package.json
+└── vite.config.ts
+```
+
+## 🚀 Run locally
+
+### Prerequisites
+- Node.js 18 or later
+- npm
+- A Google Gemini API key and/or Sarvam AI API key for the corresponding AI provider features
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/himeshchandra812/shiksha-sathi.git
+cd shiksha-sathi
+```
+
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+### 3. Configure environment variables
+
+Copy the example environment file:
+
+**Windows PowerShell**
+```powershell
+Copy-Item .env.example .env
+```
+
+**macOS / Linux**
+```bash
+cp .env.example .env
+```
+
+Add the API keys you intend to use to `.env`:
+
+```env
+GEMINI_API_KEY=your_gemini_api_key
+GEMINI_API_KEY2=your_optional_second_gemini_key
+SARVAM_API_KEY=your_sarvam_api_key
+NODE_ENV=development
+```
+
+Only configure keys for providers you plan to use. Never commit secrets.
+
+### 4. Start the development server
+
+```bash
+npm run dev
+```
+
+### 5. Create a production build
+
+```bash
+npm run build
+npm start
+```
+
+## 🔐 Security
+
+- Store provider API keys in server-side environment variables.
+- Do not share or commit your local `.env` file.
+- See [SECURITY.md](SECURITY.md) for security-related guidance.
+
+## 🛣️ Roadmap
+
+Ideas for future development:
+- Add a hosted live demo and walkthrough video.
+- Expand teacher and student analytics with classroom-ready reports.
+- Improve accessibility and add more Indian languages.
+- Add more interactive STEM simulations and reusable lesson resources.
+
+## 🤝 Contributing
+
+Suggestions, bug reports, and improvements are welcome. Open an issue to discuss a proposed change before submitting a pull request.
 
 ## 📄 License
 
-MIT
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file if present in the repository.
+
+---
+
+**Built to make teaching and learning coding and robotics more engaging, practical, and accessible.**
